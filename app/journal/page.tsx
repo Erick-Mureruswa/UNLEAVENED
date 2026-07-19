@@ -1,8 +1,11 @@
+export const revalidate = 600;
+
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import Reveal from "@/components/editorial/Reveal";
-import { articles, formatDate } from "@/lib/journal";
+import { formatDate } from "@/lib/journal";
+import { getArticles } from "@/lib/article-service";
 
 export const metadata: Metadata = {
   title: "Journal",
@@ -10,8 +13,8 @@ export const metadata: Metadata = {
     "Notes on materials, architecture, philosophy, and craftsmanship. Written slowly, published rarely.",
 };
 
-export default function JournalPage() {
-  const [lead, ...rest] = articles;
+export default async function JournalPage() {
+  const [lead, ...rest] = await getArticles();
 
   return (
     <div className="container-uc pb-28 pt-36 md:pb-44 md:pt-48">

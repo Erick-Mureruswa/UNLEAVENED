@@ -2,14 +2,40 @@
 
 import { useState, type FormEvent } from "react";
 import Reveal from "@/components/editorial/Reveal";
+import { getSupabase } from "@/lib/supabase";
+
+const DUPLICATE_EMAIL_CODE = "23505";
 
 export default function Newsletter() {
   const [email, setEmail] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!email.trim()) return;
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed || isSending) return;
+
+    const supabase = getSupabase();
+    if (!supabase) {
+      setIsSubmitted(true);
+      return;
+    }
+
+    setIsSending(true);
+    setErrorMessage("");
+    const { error } = await supabase
+      .from("newsletter_subscribers")
+      .insert({ email: trimmed });
+    setIsSending(false);
+
+    // An address that already subscribed counts as success.
+    if (error && error.code !== DUPLICATE_EMAIL_CODE) {
+      console.error("[newsletter] Subscribe failed:", error.message);
+      setErrorMessage("Something interrupted the letter. Please try again.");
+      return;
+    }
     setIsSubmitted(true);
   };
 
@@ -57,11 +83,17 @@ export default function Newsletter() {
                 </div>
                 <button
                   type="submit"
-                  className="label-uc border border-ink bg-ink px-8 py-3.5 text-bone transition-colors duration-500 ease-luxe hover:bg-transparent hover:text-ink"
+                  disabled={isSending}
+                  className="label-uc border border-ink bg-ink px-8 py-3.5 text-bone transition-colors duration-500 ease-luxe hover:bg-transparent hover:text-ink disabled:opacity-50"
                 >
-                  Subscribe
+                  {isSending ? "Sending" : "Subscribe"}
                 </button>
               </form>
+            )}
+            {errorMessage && !isSubmitted && (
+              <p className="mt-4 text-sm text-charcoal" role="alert">
+                {errorMessage}
+              </p>
             )}
           </Reveal>
         </div>

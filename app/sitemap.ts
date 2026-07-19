@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
 import { getProducts } from "@/lib/product-service";
-import { articles } from "@/lib/journal";
+import { getArticles } from "@/lib/article-service";
 import { SITE_URL } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await getProducts();
+  const articles = await getArticles();
   const staticRoutes = [
     "",
     "/collection",

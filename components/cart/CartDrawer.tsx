@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { buildWhatsAppOrderUrl } from "@/lib/cart";
+import { recordOrderEnquiry } from "@/lib/orders";
 import { formatPrice } from "@/lib/products";
 import { cn } from "@/lib/utils";
 
@@ -153,6 +154,7 @@ export default function CartDrawer() {
                 href={buildWhatsAppOrderUrl(items)}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => void recordOrderEnquiry(items)}
                 className="label-uc mt-6 block border border-ink bg-ink px-8 py-4 text-center text-bone transition-colors duration-500 ease-luxe hover:bg-transparent hover:text-ink"
               >
                 Checkout via WhatsApp

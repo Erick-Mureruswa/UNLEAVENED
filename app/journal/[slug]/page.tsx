@@ -1,21 +1,25 @@
+export const revalidate = 600;
+
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Reveal from "@/components/editorial/Reveal";
-import { articles, formatDate, getArticle } from "@/lib/journal";
+import { formatDate } from "@/lib/journal";
+import { getArticles, getArticleBySlug } from "@/lib/article-service";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export function generateStaticParams() {
+export async function generateStaticParams() {
+  const articles = await getArticles();
   return articles.map((article) => ({ slug: article.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const article = getArticle(slug);
+  const article = await getArticleBySlug(slug);
   if (!article) return {};
   return {
     title: article.title,
@@ -26,9 +30,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ArticlePage({ params }: PageProps) {
   const { slug } = await params;
-  const article = getArticle(slug);
+  const article = await getArticleBySlug(slug);
   if (!article) notFound();
 
+  const articles = await getArticles();
   const currentIndex = articles.findIndex((a) => a.slug === article.slug);
   const nextArticle = articles[(currentIndex + 1) % articles.length];
 

@@ -2,9 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import Reveal from "@/components/editorial/Reveal";
 import SectionHeading from "@/components/editorial/SectionHeading";
-import { articles, formatDate } from "@/lib/journal";
+import { formatDate } from "@/lib/journal";
+import { getArticles } from "@/lib/article-service";
 
-export default function JournalPreview() {
+export default async function JournalPreview() {
+  const articles = await getArticles();
   const latest = articles.slice(0, 2);
 
   return (

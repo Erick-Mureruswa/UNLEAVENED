@@ -1,6 +1,8 @@
--- UNLEAVENED Co. product catalog
--- Run this once in the Supabase SQL Editor (Dashboard > SQL Editor > New query).
--- Safe to re-run: inserts are skipped when the product code already exists.
+-- UNLEAVENED Co. backend schema
+-- Applied to the live project as migrations (create_products, create_articles,
+-- create_orders_and_subscribers). Kept here so a fresh project can be
+-- bootstrapped from one file. Safe to re-run: DDL is idempotent and seed
+-- inserts are skipped on conflict.
 
 create extension if not exists "pgcrypto";
 
@@ -140,3 +142,63 @@ values
   false
 )
 on conflict (code) do nothing;
+
+-- Journal articles: public may read published entries only.
+
+create table if not exists public.articles (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,
+  title text not null,
+  category text not null check (category in ('Stories','Materials','Architecture','Philosophy','People','Craftsmanship')),
+  date date not null,
+  excerpt text not null,
+  cover jsonb not null,
+  body text[] not null default array[]::text[],
+  published boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+alter table public.articles enable row level security;
+
+drop policy if exists "Public read access" on public.articles;
+create policy "Public read access"
+  on public.articles for select
+  using (published);
+
+-- Order enquiries: written when a customer opens WhatsApp checkout.
+-- Anon key may insert only; reading requires the service role (dashboard).
+
+create table if not exists public.order_enquiries (
+  id uuid primary key default gen_random_uuid(),
+  items jsonb not null check (
+    jsonb_typeof(items) = 'array'
+    and jsonb_array_length(items) between 1 and 50
+  ),
+  subtotal integer not null check (subtotal >= 0 and subtotal <= 1000000),
+  created_at timestamptz not null default now()
+);
+
+alter table public.order_enquiries enable row level security;
+
+drop policy if exists "Anyone can create an enquiry" on public.order_enquiries;
+create policy "Anyone can create an enquiry"
+  on public.order_enquiries for insert
+  with check (true);
+
+-- Newsletter subscribers. Anon key may insert only.
+
+create table if not exists public.newsletter_subscribers (
+  id uuid primary key default gen_random_uuid(),
+  email text unique not null check (
+    email ~* '^[^@[:space:]]+@[^@[:space:]]+\.[^@[:space:]]+$'
+    and char_length(email) <= 254
+  ),
+  created_at timestamptz not null default now()
+);
+
+alter table public.newsletter_subscribers enable row level security;
+
+drop policy if exists "Anyone can subscribe" on public.newsletter_subscribers;
+create policy "Anyone can subscribe"
+  on public.newsletter_subscribers for insert
+  with check (true);
